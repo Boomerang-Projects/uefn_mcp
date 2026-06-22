@@ -46,7 +46,7 @@ lucky_block_manager := class(creative_device):
             S.Enable()
 
         # Start the storm once — never reset it between rounds
-        if (not StormStarted):
+        if (StormStarted = false):
             set StormStarted = true
             StormController.GenerateStorm()
 
@@ -57,10 +57,11 @@ lucky_block_manager := class(creative_device):
             if (i <= 0):
                 break
             j := GetRandomInt(0, i)
-            if (TI := ShuffledTeleporters[i], TJ := ShuffledTeleporters[j],
-                Swapped1 := ShuffledTeleporters.ReplaceElement[i, TJ]):
-                if (Swapped2 := Swapped1.ReplaceElement[j, TI]):
-                    set ShuffledTeleporters = Swapped2
+            if (TI := ShuffledTeleporters[i],
+                TJ := ShuffledTeleporters[j],
+                Swapped1 := ShuffledTeleporters.ReplaceElement[i, TJ],
+                Swapped2 := Swapped1.ReplaceElement[j, TI]):
+                set ShuffledTeleporters = Swapped2
             set i = i - 1
 
         for (Idx -> Player : Players):
