@@ -16,12 +16,6 @@ lucky_block_manager := class(creative_device):
     var GameRunning : logic = false
     var StormStarted : logic = false
 
-    SwapTP(Arr : []teleporter_device, I : int, J : int)<decides> : []teleporter_device =
-        TI := Arr[I]
-        TJ := Arr[J]
-        Mid := Arr.ReplaceElement[I, TJ]
-        Mid.ReplaceElement[J, TI]
-
     OnBegin<override>()<suspends> : void =
         for (T : PillarTeleporters):
             T.Disable()
@@ -56,19 +50,13 @@ lucky_block_manager := class(creative_device):
             set StormStarted = true
             StormController.GenerateStorm()
 
-        # Shuffle teleporters so each player gets a random unique pillar
-        var ShuffledTeleporters : []teleporter_device = PillarTeleporters
-        var i : int = ShuffledTeleporters.Length - 1
-        loop:
-            if (i <= 0):
-                break
-            j := GetRandomInt(0, i)
-            if (Swapped := SwapTP(ShuffledTeleporters, i, j)):
-                set ShuffledTeleporters = Swapped
-            set i = i - 1
-
+        # Assign each player a unique pillar via random rotation
+        Offset := GetRandomInt(0, PillarTeleporters.Length - 1)
         for (Idx -> Player : Players):
-            if (Idx < ShuffledTeleporters.Length, Teleporter := ShuffledTeleporters[Idx]):
+            var PillarIdx : int = Idx + Offset
+            if (PillarIdx >= PillarTeleporters.Length):
+                set PillarIdx = PillarIdx - PillarTeleporters.Length
+            if (Teleporter := PillarTeleporters[PillarIdx]):
                 Teleporter.Enable()
                 Teleporter.Teleport(Player)
                 Teleporter.Disable()
