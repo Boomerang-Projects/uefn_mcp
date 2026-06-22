@@ -10,7 +10,7 @@ lucky_block_manager := class(creative_device):
 
     @editable PillarTeleporters : []teleporter_device = array{}
     @editable StormController : basic_storm_controller_device = basic_storm_controller_device{}
-    @editable EndGameDevice : end_game_device = end_game_device{}
+    @editable LobbyTeleporter : teleporter_device = teleporter_device{}
     @editable ItemSpawners : []item_spawner_device = array{}
 
     var GameRunning : logic = false
@@ -77,11 +77,12 @@ lucky_block_manager := class(creative_device):
                         set AliveCount = AliveCount + 1
             if (AliveCount <= 1):
                 Sleep(3.0)
+                # Send everyone back to the lobby to start the next round
+                LobbyTeleporter.Enable()
                 for (P : Players):
-                    if (FC := P.GetFortCharacter[]):
-                        if (FC.IsActive[]):
-                            EndGameDevice.Activate(Agent := P)
+                    LobbyTeleporter.Teleport(P)
+                LobbyTeleporter.Disable()
                 for (T : PillarTeleporters):
                     T.Disable()
-                Sleep(5.0)
+                Sleep(3.0)
                 return
