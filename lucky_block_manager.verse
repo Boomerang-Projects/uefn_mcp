@@ -17,6 +17,8 @@ lucky_block_manager := class(creative_device):
     var GameRunning : logic = false
 
     OnBegin<override>()<suspends> : void =
+        for (T : PillarTeleporters):
+            T.Disable()
         loop:
             RunLobbyPhase()
             RunGamePhase()
@@ -59,7 +61,9 @@ lucky_block_manager := class(creative_device):
         # Teleport each player to their assigned pillar
         for (Idx -> Player : Players):
             if (Teleporter := ShuffledTeleporters[Idx]):
+                Teleporter.Enable()
                 Teleporter.Teleport(Player)
+                Teleporter.Disable()
 
         # Start the storm
         StormController.StartStorm()
