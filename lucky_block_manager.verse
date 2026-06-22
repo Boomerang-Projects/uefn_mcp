@@ -16,6 +16,12 @@ lucky_block_manager := class(creative_device):
     var GameRunning : logic = false
     var StormStarted : logic = false
 
+    SwapTP(Arr : []teleporter_device, I : int, J : int)<decides> : []teleporter_device =
+        TI := Arr[I]
+        TJ := Arr[J]
+        Mid := Arr.ReplaceElement[I, TJ]
+        Mid.ReplaceElement[J, TI]
+
     OnBegin<override>()<suspends> : void =
         for (T : PillarTeleporters):
             T.Disable()
@@ -57,11 +63,8 @@ lucky_block_manager := class(creative_device):
             if (i <= 0):
                 break
             j := GetRandomInt(0, i)
-            if (TI := ShuffledTeleporters[i],
-                TJ := ShuffledTeleporters[j],
-                Swapped1 := ShuffledTeleporters.ReplaceElement[i, TJ],
-                Swapped2 := Swapped1.ReplaceElement[j, TI]):
-                set ShuffledTeleporters = Swapped2
+            if (Swapped := SwapTP(ShuffledTeleporters, i, j)):
+                set ShuffledTeleporters = Swapped
             set i = i - 1
 
         for (Idx -> Player : Players):
