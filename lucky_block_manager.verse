@@ -11,6 +11,7 @@ lucky_block_manager := class(creative_device):
     @editable PillarTeleporters : []teleporter_device = array{}
     @editable StormController : basic_storm_controller_device = basic_storm_controller_device{}
     @editable LobbyTeleporter : teleporter_device = teleporter_device{}
+    @editable ResetZone : mutator_zone_device = mutator_zone_device{}
     @editable ItemSpawners : []item_spawner_device = array{}
 
     var GameRunning : logic = false
@@ -44,6 +45,11 @@ lucky_block_manager := class(creative_device):
 
         for (S : ItemSpawners):
             S.Enable()
+
+        # Wipe player builds from last round before anyone lands on pillars
+        ResetZone.Enable()
+        Sleep(2.0)
+        ResetZone.Disable()
 
         # Start the storm once — never reset it between rounds
         if (StormStarted = false):
