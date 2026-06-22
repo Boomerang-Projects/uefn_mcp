@@ -47,8 +47,21 @@ class UEFNHandler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         try:
-            length = int(self.headers.get("Content-Length", 0))
-            body = json.loads(self.rfile.read(length)) if length else {}
+            length = int(self.headers.get("Content-Length") or 0)
+            if length:
+                self.connection.setblocking(True)
+                try:
+                    raw = b""
+                    while len(raw) < length:
+                        chunk = self.connection.recv(length - len(raw))
+                        if not chunk:
+                            break
+                        raw += chunk
+                finally:
+                    self.connection.setblocking(False)
+                body = json.loads(raw.decode("utf-8")) if raw else {}
+            else:
+                body = {}
 
             if self.path == "/place_actor":
                 loc = body.get("location", [0, 0, 0])
@@ -86,14 +99,16 @@ class UEFNHandler(BaseHTTPRequestHandler):
                 self._ok({"selected": body["name"]})
 
             elif self.path == "/run_python":
-                import io, sys
-                buf = io.StringIO()
-                sys.stdout, old = buf, sys.stdout
+                lines = []
+                def _print(*args, **kwargs):
+                    lines.append(" ".join(str(a) for a in args))
+                code = body.get("code", "")
+                globs = {"unreal": unreal, "print": _print, "__builtins__": __builtins__, "open": open}
                 try:
-                    exec(body.get("code", ""), {"unreal": unreal})
-                finally:
-                    sys.stdout = old
-                self._ok({"output": buf.getvalue()})
+                    exec(code, globs)
+                except Exception as ex:
+                    lines.append("ERROR: " + str(ex))
+                self._ok({"output": "\n".join(lines)})
 
             else:
                 self._err(404, "Unknown endpoint")
