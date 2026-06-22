@@ -11,29 +11,46 @@ lucky_block_manager := class(creative_device):
     @editable PillarTeleporters : []teleporter_device = array{}
     @editable StormController : basic_storm_controller_device = basic_storm_controller_device{}
     @editable EndGameDevice : end_game_device = end_game_device{}
-    @editable ReadyButton : conditional_button_device = conditional_button_device{}
+    @editable ItemSpawners : []item_spawner_device = array{}
 
     var GameRunning : logic = false
+    var StormStarted : logic = false
 
     OnBegin<override>()<suspends> : void =
         for (T : PillarTeleporters):
             T.Disable()
+        for (S : ItemSpawners):
+            S.Disable()
         loop:
             RunLobbyPhase()
             RunGamePhase()
 
     RunLobbyPhase()<suspends> : void =
         set GameRunning = false
-        ReadyButton.Enable()
-        ReadyButton.ActivatedEvent.Await()
-        ReadyButton.Disable()
+        for (S : ItemSpawners):
+            S.Disable()
+        var Seconds : int = 6
+        loop:
+            if (Seconds <= 0):
+                break
+            Print("Game starting in {Seconds}...")
+            Sleep(1.0)
+            set Seconds = Seconds - 1
 
     RunGamePhase()<suspends> : void =
         set GameRunning = true
         Playspace := GetPlayspace()
         Players := Playspace.GetPlayers()
 
-        # Shuffle teleporters and assign one per player
+        for (S : ItemSpawners):
+            S.Enable()
+
+        # Start the storm once — never reset it between rounds
+        if (not StormStarted):
+            set StormStarted = true
+            StormController.GenerateStorm()
+
+        # Shuffle teleporters so each player gets a random unique pillar
         var ShuffledTeleporters : []teleporter_device = PillarTeleporters
         var i : int = ShuffledTeleporters.Length - 1
         loop:
@@ -46,34 +63,32 @@ lucky_block_manager := class(creative_device):
                     set ShuffledTeleporters = Swapped2
             set i = i - 1
 
-        # Teleport each player to their assigned pillar
         for (Idx -> Player : Players):
-            if (Idx < PillarTeleporters.Length, Teleporter := ShuffledTeleporters[Idx]):
+            if (Idx < ShuffledTeleporters.Length, Teleporter := ShuffledTeleporters[Idx]):
                 Teleporter.Enable()
                 Teleporter.Teleport(Player)
                 Teleporter.Disable()
 
-        Sleep(30.0)
-        StormController.GenerateStorm()
-
         WaitForGameEnd(Playspace)
+
+        for (S : ItemSpawners):
+            S.Disable()
 
     WaitForGameEnd(Playspace : fort_playspace)<suspends> : void =
         loop:
             Sleep(3.0)
             Players := Playspace.GetPlayers()
             var AliveCount : int = 0
-            var LastAlive : agent = agent{}
             for (P : Players):
                 if (FC := P.GetFortCharacter[]):
                     if (FC.IsActive[]):
                         set AliveCount = AliveCount + 1
-                        set LastAlive = P
             if (AliveCount <= 1):
                 Sleep(3.0)
-                if (AliveCount = 1):
-                    EndGameDevice.Activate(Agent := LastAlive)
-                StormController.DestroyStorm()
+                for (P : Players):
+                    if (FC := P.GetFortCharacter[]):
+                        if (FC.IsActive[]):
+                            EndGameDevice.Activate(Agent := P)
                 for (T : PillarTeleporters):
                     T.Disable()
                 Sleep(5.0)
