@@ -34,7 +34,7 @@ pip install mcp requests
 ### 3. Clone this repo
 
 ```bash
-git clone https://github.com/ceeano/uefn_mcp.git
+git clone https://github.com/Boomerang-Projects/uefn_mcp
 cd uefn_mcp
 ```
 
